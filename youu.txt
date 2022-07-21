@@ -1,0 +1,271 @@
+Login|Login|380
+TitleBar|Login|364
+SystemMenuBar|系统菜单栏|-∞
+Item 1|系统|-∞
+Close|关闭|21
+SensitiveInfo||-∞
+Password_PWD|Password|54
+txtPassword||150
+User_Login|Login|103
+|Login|32
+Config_Cancel|Cancel|102
+|Cancel|38
+Config_Tool|Config Tool|900
+TitleBar|Config Tool|884
+SystemMenuBar|系统菜单栏|22
+Item 1|系统|22
+Minimize|最小化|47
+Maximize|最大化|46
+Close|关闭|47
+tabControl||884
+LicenseTab|License|58
+|License|42
+||878
+License_State|License Status|85
+txblicenseStatu||34
+btnLicenseBrowse|Browse...|80
+|Browse...|50
+License_LocalHID|Hardware ID|76
+License_AdditionInfo|Additional Information|878
+|Additional Information|131
+License_SN|SN|17
+License_MaxDeviceLimit|Maximum Devices|111
+License_User|Licensed User|83
+License_Contact|Contact|47
+License_Remarks|Other|35
+DevTab|Device Management|131
+|Device Management|119
+PatientTab|Patient Information Management|204
+|Patient Information Management|192
+LogTab|Log Manage|83
+|Log Manage|71
+ConfigSetTab|Configuration Management|172
+|Configuration Management|160
+AboutTab|About|48
+|About|36
+Config_GWState|Gateway Status |92
+StateText|Running|80
+Config_RunTime|Running Time|80
+UpdateTime|00:22:25|80
+Config_RestartGW|Restart Gateway|115
+|Restart Gateway|93
+Config_Tool|Config Tool|900
+TitleBar|Config Tool|884
+SystemMenuBar|系统菜单栏|22
+Item 1|系统|22
+Minimize|最小化|47
+Maximize|最大化|46
+Close|关闭|47
+tabControl||884
+LicenseTab|License|54
+|License|42
+DevTab|Device Management|131
+|Device Management|119
+PatientTab|Patient Information Management|204
+|Patient Information Management|192
+LogTab|Log Manage|83
+|Log Manage|71
+ConfigSetTab|Configuration Management|176
+|Configuration Management|160
+TabConfig||878
+Config_Network|Network Configuration|148
+|Network Configuration|132
+||872
+scroll||872
+MyLocal|Local Listen|872
+|Local Listen|67
+tbListenIp|IP|11
+LocalListenIp||120
+|Device Query Listen|200
+QueryMonitor|Device Query Listen|134
+tbPort|Port|24
+TBQueryMonitor||50
+|ADT Listen|200
+CHBADT|ADT Listen|82
+tbADTport|Port|24
+TBADT||50
+GbDeviceAccess|Device Access Type|129
+|Device Access Type|111
+DeviceSwitch|Monitor|67
+|Monitor|47
+DcsSwitch|CMS|67
+|CMS|27
+Network_EMRList|Inbound Server IP|318
+|Inbound Server IP|103
+MyFilterList||110
+|127.0.0.1|106
+tbEmrList|IP|11
+EMRIP||100
+btAdd|Add|80
+|Add|23
+btndelete|Delete|80
+|Delete|37
+MyRemote|Channel Config|872
+|Channel Config|88
+GBcType|Connection Type|850
+Network_ConnectType|Connection Type|97
+TCPConnect|TCP Connection|92
+ConnectType||120
+scrollgrid||850
+DataGridChannel||850
+PART_ColumnHeadersPresenter||848
+|Channel|100
+|IP|109
+|Port|59
+|Timeout|100
+|Interval|95
+|Test|165
+|Gateway.Entity.Composition.ConfigData|848
+PART_BottomHeaderGripper||-∞
+|项: Gateway.Entity.Composition.ConfigData，列显示索引: 0|100
+|Channel 1|77
+|项: Gateway.Entity.Composition.ConfigData，列显示索引: 1|109
+txtIpChannel1||100
+|项: Gateway.Entity.Composition.ConfigData，列显示索引: 2|59
+txtPortChannel1||50
+|项: Gateway.Entity.Composition.ConfigData，列显示索引: 3|100
+Channel1_OverTime||45
+MyComboBox||45
+UpBtn|▲|20
+|▲|6
+DownBtn|▼|20
+|▼|6
+|项: Gateway.Entity.Composition.ConfigData，列显示索引: 4|100
+Checkresend||15
+|项: Gateway.Entity.Composition.ConfigData，列显示索引: 5|120
+Channel1_ResendTimes||45
+|项: Gateway.Entity.Composition.ConfigData，列显示索引: 6|95
+Channel2_InterVal||45
+|项: Gateway.Entity.Composition.ConfigData，列显示索引: 7|165
+Test_Channel|Test|60
+PART_TopHeaderGripper||-∞
+|Channel 2|77
+|Channel 3|77
+|Channel 4|77
+|ADT Query|83
+NetRefresh|Refresh|80
+|Refresh|44
+SaveBtn|Save|80
+|Save|26
+Config_Business|Configuration Item Management|201
+|Configuration Item Management|189
+Config_Time|Time Synchronization|136
+|Time Synchronization|124
+Config_User|Security Management|138
+|Security Management|126
+Config_Other|Other Configuration|128
+|Other Configuration|116
+AboutTab|About|48
+|About|36
+Config_GWState|Gateway Status |92
+StateText|Running|80
+Config_RunTime|Running Time|80
+UpdateTime|00:22:25|80
+Config_RestartGW|Restart Gateway|115
+|Restart Gateway|93
+Config_Tool|Config Tool|900
+TitleBar|Config Tool|884
+SystemMenuBar|系统菜单栏|22
+Item 1|系统|22
+Minimize|最小化|47
+Maximize|最大化|46
+Close|关闭|47
+tabControl||884
+LicenseTab|License|54
+|License|42
+DevTab|Device Management|131
+|Device Management|119
+PatientTab|Patient Information Management|204
+|Patient Information Management|192
+LogTab|Log Manage|83
+|Log Manage|71
+ConfigSetTab|Configuration Management|176
+|Configuration Management|160
+TabConfig||878
+Config_Network|Network Configuration|144
+|Network Configuration|132
+Config_Business|Configuration Item Management|201
+|Configuration Item Management|189
+Config_Time|Time Synchronization|136
+|Time Synchronization|124
+Config_User|Security Management|138
+|Security Management|126
+Config_Other|Other Configuration|132
+|Other Configuration|116
+||872
+Other_DataBaseUpgrade|Configuration Data Manage|872
+|Configuration Data Manage|160
+Config_Import|Import|80
+|Import|40
+Config_Export|Export|80
+|Export|38
+Config_Revert|Revert|80
+|Revert|36
+gbDbset|Database Config|872
+|Database Config|95
+Config_DataBase_Type|Database Type|85
+tbStorageType|Integrated Database|123
+btnSet|Data Synchronization|127
+|Data Synchronization|123
+btnClearData|Data Maintain|85
+|Data Maintain|81
+AboutTab|About|48
+|About|36
+Config_GWState|Gateway Status |92
+StateText|Running|80
+Config_RunTime|Running Time|80
+UpdateTime|00:22:25|80
+Config_RestartGW|Restart Gateway|115
+|Restart Gateway|93
+ErpWindow|Revert|410
+TitleBar|Revert|394
+SystemMenuBar|系统菜单栏|22
+Item 1|系统|22
+Close|关闭|34
+Other_ConfigFile|Config File|374
+|Config File|61
+dataGrid1||362
+PART_ColumnHeadersPresenter||360
+||80
+chbAll|Select|70
+|Select|34
+|State|80
+|Gateway.ConfigManage.CustomControl.ConfigInfo|360
+PART_BottomHeaderGripper||-∞
+|Coding System|200
+|项: Gateway.ConfigManage.CustomControl.ConfigInfo，列显示索引: 1|80
+|项: Gateway.ConfigManage.CustomControl.ConfigInfo，列显示索引: 2|80
+PART_TopHeaderGripper||-∞
+|HL7 Message Customization|200
+|HL7_XML Message Domain Type|200
+|Config Item Management|200
+|Network Configuration|200
+|User Information|200
+ExportBtn|Revert|80
+|Revert|36
+ErpWindow|Revert|410
+TitleBar|Revert|394
+SystemMenuBar|系统菜单栏|22
+Item 1|系统|22
+Close|关闭|34
+Other_ConfigFile|Config File|374
+|Config File|61
+dataGrid1||362
+PART_ColumnHeadersPresenter||360
+||80
+chbAll|Select|70
+|Select|34
+|State|80
+|Gateway.ConfigManage.CustomControl.ConfigInfo|360
+PART_BottomHeaderGripper||-∞
+|Coding System|200
+|项: Gateway.ConfigManage.CustomControl.ConfigInfo，列显示索引: 1|80
+|项: Gateway.ConfigManage.CustomControl.ConfigInfo，列显示索引: 2|80
+PART_TopHeaderGripper||-∞
+|HL7 Message Customization|200
+|HL7_XML Message Domain Type|200
+|Config Item Management|200
+|Network Configuration|200
+|User Information|200
+ExportBtn|Revert|80
+|Revert|36

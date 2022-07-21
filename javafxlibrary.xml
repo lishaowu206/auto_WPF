@@ -1,0 +1,1934 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<keywordspec format="ROBOT" type="LIBRARY" generated="2020-11-11T06:36:11Z" scope="GLOBAL" name="JavaFXLibrary" specversion="2" namedargs="true">
+<version>0.7.1</version>
+<scope>global</scope>
+<namedargs>yes</namedargs>
+<doc>JavaFXLibrary is a test library for Robot Framework targeted for UI acceptance testing of JavaFX applications.
+JavaFXLibrary can be run with both Jython and Python version of Robot Framework and both in Local and Remote mode.
+
+In short, this library is a wrapper for [https://github.com/TestFX/TestFX|TestFX], which is a Java library for testing JavaFX UI applications.
+
+== 1. Preparations before running the tests ==
+- JavaFXLibrary needs to be compiled and packaged. [https://github.com/eficode/JavaFXLibrary/releases/latest|Download JAR release] or clone the [https://github.com/eficode/JavaFXLibrary.git|repository] and run _mvn package_ from the root folder.
+- The tested application and the JavaFXLibrary jars need to be added to CLASSPATH.
+- Once the library jar -file is available, the library can be taken into use in two ways: *Local mode* with _Jython_ and *Remote mode* with both _Jython_ and _Python_ version of Robot Framework.
+
+== 2.1 Usage in local mode(Jython only) ==
+
+First, the JavaFXLibrary needs to be taken into use in the settings table.
+| *Settings* | *Value* |
+| Library | JavaFXLibrary |
+
+Experimental headless mode can be activated at the import time by setting first argument to ${True}
+| *Settings* | *Value* |
+| Library | JavaFXLibrary | ${True} |
+
+== 2.2 Launch application ==
+
+In test data start application like this (setting of classpath is optional if Java Agent is used)
+
+| *Keyword* | *Argument* |
+| Set To Classpath | your_application.jar |
+| Launch Javafx Application | org.yourmodule.mainClass |
+
+== 2.3 Usage in remote mode(Jython &amp; Python) ==
+
+=== 2.3.1 Start remote library manually ===
+
+When using the test library in remote mode, the library needs to be started at the remote end first. This can be done as follows:
+- _java -jar javafxlibrary-&lt;version&gt;.jar_
+This will start the remote server listening at default port number 8270.
+
+If there is a need to use a different port the library can be started with optional parameter:
+- _java -jar javafxlibrary-&lt;version&gt;.jar 1234_
+This will start the remote server listening on port 1234.
+
+JavaFXLibrary can be taken into use as remote library in settings table as follows:
+| *Settings* | *Value* |
+| Library | Remote | http://localhost:8270 | WITH NAME | JavaFXLibrary |
+
+Multiple JavaFXLibraries in remote mode:
+| *Settings* | *Value* |
+| Library | Remote | ip_address:8270 | WITH NAME | my_application |
+| Library | Remote | ip_address:8271 | WITH NAME | my_other_application |
+
+Experimental headless mode can be activated in remote mode at the import time by setting first argument to ${True}
+| *Settings* | *Value* |
+| Library | Remote | http://localhost:8270 | ${True} | WITH NAME | JavaFXLibrary |
+
+Launch application like in `2.2 Launch application`.
+
+=== 2.3.2 Start remote library as Java Agent ===
+
+Library can be used as java agent. Launch application with `-javaagent:/path/to/javafxlibrary-&lt;version&gt;.jar`.
+Default port is 8270 and can be changed with adding `=&lt;port&gt;` to java agent command. Only remote library is supported.
+Using `Launch JavaFX Application` is still required but instead of starting new application keyword initializes Stage
+for library (see `2.2 Launch application`).
+
+== 3. Locating JavaFX Nodes ==
+=== 3.1 Locator syntax ===
+JavaFXLibrary offers different query types for locating objects: *id*, *css*, *class*, *text*, *xpath* and *pseudo*.
+Query type is defined by using a prefix. Note that in css type id's '#'-character must be escaped as it begins a
+comment in Robot Framework.
+
+| *Example Query* | *Description* |
+| id=submitButton | Returns a node with id submitButton. Basically same as default query "_\#submitButton_". |
+| css=VBox &gt; .customStyle | Returns a node matching the CSS selector. |
+| css=.customStyle \#button-id | Combined CSS selector with id. |
+| class=javafx.scene.shape.Rectangle | Returns a node that is an instance of the given class. |
+| text="Submit" | Returns a node with text value _Submit_. The value must be inside quotation marks. Works only with [https://docs.oracle.com/javase/8/javafx/api/javafx/scene/control/Labeled.html|Labeled] nodes. |
+| text="Text with \"quotation\" marks" | Text value can contain spaces and quotation marks, but inner quotation marks must be escaped using _'\'_ backslash character. |
+| xpath=//Rectangle[@fill="0xff1493ff"] | Returns a Rectangle that has fill value _0xff1493ff_. See `3.3 About XPath queries` for more details about using xpath queries. |
+| pseudo=hover;focused | Returns a node that contains pseudo class states _hover_ and _focused_. See `3.4 About Pseudo queries` for more details about using pseudo queries. |
+
+These queries can be chained to move in application UI tree more precisely. The result of the previous query
+is used as the root of the next query. Only queries with prefixes can be chained.
+| *Example Query* | *Description* |
+| xpath=/VBox/HBox[4] css=Label | Finds 4th HBox child of VBox and returns the Label it contains. |
+| css=VBox HBox xpath=//Rectangle[@width="600.0"] | Finds the HBox using CSS query and proceeds to find a Rectangle that is 600px wide and is located in the HBox. |
+| id=main-view css=.save-button | Finds css .button under id main-view. |
+| class=com.eficode.WrapperNode css=.styleClass text="toggle fullscreen" | Returns a node containing text _toggle fullscreen_ that has a parent which contains style class _styleClass_ and has a parent that is an instance of the WrapperNode class. |
+
+=== 3.2 Using locators as keyword arguments ===
+Locators can be given as arguments for every JavaFXLibrary keyword that accepts a node as an argument. This is useful as it
+helps keeping the test case implementations cleaner and easier to read. However sometimes it is more convenient to have
+a reference to the node saved in a variable. `Find` and `Find All` -keywords can be used to get these references.
+| *Return value* | *Keyword* | *Argument* | *Description* |
+| | Click On | submit | # Clicks on node containing text _submit_ |
+| | Click On | xpath=//Button[@text="submit"] | # Clicks on button containing text _submit_ |
+| | |
+| ${node}= | Find | text="submit" | # Finds node containing text _submit_ and returns it |
+| | Click On | ${node} | # Click on the node that was found earlier |
+
+If we want to click every Button of the application, we could use Find All and call the click on keyword in a for loop:
+| *Return value* | *Keyword* | *Argument* | | *Description* |
+| ${buttons}= | Find All | css=.button | | # Get all button nodes to @{buttons} list variable |
+| FOR | ${button} | IN | @{buttons} |
+| | Click On | ${button} | | # Click each button in for loop |
+| END | | |
+
+=== 3.3 About XPath queries ===
+ The FXML used in XPath lookups is generated on the fly and might differ from the actual FXML file the application uses. For
+example a Button that contains a text value is split into a Parent node Button and a child node LabeledText. Numeric
+values of attributes such as width and height are represented in their actual type format, which is usually double for
+JavaFX nodes, so e.g. _height="600"_ becomes _height="600.0"_. This is important to note when using attribute values in the
+XPath query, as _Node[@height="600"]_ will not be able to find anything.
+| *Original FXML* | *Generated FXML* |
+| &lt;Button text="Click me" /&gt; | &lt;Button&gt; &lt;LabeledText text="Click me" ... /&gt; &lt;/Button&gt; |
+| &lt;Rectangle width="150" height="150" x="300" /&gt; | &lt;Rectangle width="150.0" height="150.0" x="300.0" /&gt; |
+
+Generated FXML usually contains also some values that are not specifically defined in the actual code, but can still be
+used to differentiate nodes. To see the generated FXML used for the lookup, use `Log FXML` keyword. If the tested application
+is large, it might be easier to first get a parent node closer to the actual point of interest and use it as a root for
+the Log FXML keyword. This way the output will be easier to read and the log.html wont be millions of lines long.
+
+=== 3.4 About Pseudo queries ===
+All lookup queries return the first matching node, unless used with `Find All` keyword in which case all of the matches
+will be returned. Usually this is not a problem, but pseudo classes require a some additional thought and care. For example
+when the cursor is hovered on top of a JavaFX Button and the lookup is executed with a query  _pseudo=hover_, the top level
+parent node of the button is returned instead of it. This happens because every parent of the button also contains the
+hover pseudo state.
+
+To avoid accidentally targeting parents of the expected node it is advisable to use the closest parent possible as a
+root for the lookup. Root can be given as an argument for both Find keywords, or it can be defined by adding other queries
+before using pseudo-query. Multiple pseudo-classes can be given in a single query to further narrow the amount of matching
+nodes by using ';' separator, e.g. _pseudo=hover;focused_.
+
+=== 3.5 Getting node parent ===
+Sometimes you can find row according to value under it but want to get the row node. Use `Get Node Parent` keyword to
+get parent node of wanted node (can be repeated if higher in node tree).
+
+== 4. Argument types and return value types ==
+JavaFXLibrary has built in support for [https://github.com/robotframework/jrobotremoteserver|jrobotremoteserver], which provides
+a remote server interface for Robot Framework test libraries. This approach, however, has some limitations when it comes to
+passing different [https://github.com/robotframework/jrobotremoteserver/wiki/User-Guide#Return_Types|return- and parameter types]
+between Robot Framework and Java libraries. All simple object types like Strings, Integers, Booleans etc.. remain as they
+are when passing them between Robot Framework and test libraries but in case of more complex ones, argument types are being
+converted into Strings. For this situation, JavaFXLibrary keeps internal book keeping for mapping complex objects as
+key:value pairs. This means that when e.g. JavaFX Node object is returned from library to Robot Framework as a return
+value, this object is mapped into internal book keeping and only the key (String) representation of JavaFX Node is
+returned. When this same key (String value) is passed back to JavaFXLibrary, it is converted back to actual JavaFX Node.
+So, even though the return values are Strings, tester is able to use them 'as if' they were actual Nodes and e.g. call
+object methods available for Nodes.
+
+Let's take an example of a table that can contain complex objects, not just simple string values:
+| *Return value* | *Keyword* | *Argument* | *Argument* | *Description* |
+| ${table cells}= | Get Table Row Cells | id=table-id | 2 | # table cell Nodes are stored in map and string representations are returned |
+| | Node Should Be Enabled | ${table cells}[column 0] | | # Library takes the string value as an argument and converts it back to Node |
+| | Node Should Have Text | ${table cells}[column 1] | some text | | |
+| | Click On | ${table cells}[column 2] | | # in case this cell is clickable |
+| ${cell buttons}= | Find All |  css=.button | root=${table cells}[column 3] | # Finds all buttons from table cell Node |
+| | Click On | ${cell buttons}[0] |  |  |
+Most of the JavaFXLibrary keywords can use locators directly e.g. `Click On` keyword can take just css selector as an
+argument, but in some cases it can be convenient to be able to pass in a 'Node' as an argument, especially when dealing
+with complex data structures.
+
+== 5. Used ENUMs ==
+| *Definition* | *Values* |
+| [https://github.com/TestFX/TestFX/blob/master/subprojects/testfx-core/src/main/java/org/testfx/robot/Motion.java|Motion] | DEFAULT, DIRECT, HORIZONTAL_FIRST, VERTICAL_FIRST |
+| [https://docs.oracle.com/javafx/2/api/javafx/scene/input/MouseButton.html|MouseButton] | MIDDLE, NONE, PRIMARY, SECONDARY |
+| [https://docs.oracle.com/javafx/2/api/javafx/scene/input/KeyCode.html|KeyCode] | Check the 'KeyCode' link on the left for allowed values. |
+| [https://docs.oracle.com/javase/7/docs/api/java/util/concurrent/TimeUnit.html|TimeUnit] | DAYS, HOURS, MICROSECONDS, MILLISECONDS, MINUTES, NANOSECONDS, SECONDS |
+| [https://docs.oracle.com/javafx/2/api/javafx/geometry/VerticalDirection.html|VerticalDirection] | UP, DOWN |
+| [https://docs.oracle.com/javafx/2/api/javafx/geometry/HorizontalDirection.html|HorizontalDirection] | LEFT, RIGHT |
+| [https://docs.oracle.com/javafx/2/api/javafx/geometry/Pos.html|Pos] | BASELINE_CENTER, BASELINE_LEFT, BASELINE_RIGHT, BOTTOM_CENTER, BOTTOM_LEFT, BOTTOM_RIGHT, CENTER, CENTER_LEFT, CENTER_RIGHT, TOP_CENTER, TOP_LEFT, TOP_RIGHT |
+</doc>
+<init>
+<arguments>
+<arg>arg1=</arg>
+</arguments>
+<doc>JavaFXLibrary can be imported with one optional arguments.
+
+- ``headless``: Determines if tests will be run in headless mode using [https://wiki.openjdk.java.net/display/OpenJFX/Monocle|Monocle]. Default value is ``false``.</doc>
+</init>
+<kw name="Bounds Should Be Equal">
+<arguments>
+<arg>firstBounds</arg>
+<arg>secondBounds</arg>
+</arguments>
+<doc>Checks if given two bounds are equal. 
+
+``firstBounds`` is an _Object:Bounds_ that specifies the first comparable Bounds
+
+``secondBounds`` is an _Object:Bounds_ that specifies the second comparable Bounds, see `3.2 Using locators as keyword arguments`.</doc>
+</kw>
+<kw name="Bounds Should Not Be Equal">
+<arguments>
+<arg>firstBounds</arg>
+<arg>secondBounds</arg>
+</arguments>
+<doc>Checks if given two bounds are not equal. 
+
+``firstBounds`` is an _Object:Bounds_ that specifies the first comparable Bounds
+
+``secondBounds`` is an _Object:Bounds_ that specifies the second comparable Bounds, see `3.2 Using locators as keyword arguments`.</doc>
+</kw>
+<kw name="Bring Stage To Front">
+<arguments>
+<arg>stage</arg>
+</arguments>
+<doc>Brings the given stage to front
+
+``stage`` is an Object:Stage to be set in front of others, see `3.2 Using locators as keyword arguments`.</doc>
+</kw>
+<kw name="Call Object Method">
+<arguments>
+<arg>object</arg>
+<arg>method</arg>
+<arg>*arguments=</arg>
+</arguments>
+<doc>Calls a given method for a given java object.
+
+``object`` is a Java object retrieved using JavaFXLibrary keywords, see `3.2 Using locators as keyword arguments`.
+
+``method`` is the name of the method that will be called.
+
+Optional ``arguments`` are variable-length arguments that will be provided for the method.
+ If argument type is boolean, byte, char, double, float, int, long or short, it must have "casting instructions" in front of it, e.g. _"(boolean)false"_.
+
+
+Example:
+| ${node}= | Find | id=node-id | 
+| ${max height}= | Call Object Method | ${node} | maxHeight | (double)10 | 
+| ${node text}= | Call Object Method | ${node} | getText |</doc>
+</kw>
+<kw name="Call Object Method In Fx Application Thread">
+<arguments>
+<arg>object</arg>
+<arg>method</arg>
+<arg>*arguments=</arg>
+</arguments>
+<doc>Calls given method in FX Application Thread using Platform.runLater(). See `Call Object Method` for further documentation.
+
+
+Example:
+| ${node}= | Find | id=node-id | 
+| Call Object Method In Fx Application Thread | ${node} | maxHeight | (boolean)false |</doc>
+</kw>
+<kw name="Capture Image">
+<arguments>
+<arg>locator=target window</arg>
+<arg>logImage=True</arg>
+<arg>mapObject=True</arg>
+</arguments>
+<doc>Returns a screenshot of the given locator, or if not given from whole active window.
+
+Note that active window might only be part of the visible window, it e.g. dialog is active.
+
+``locator`` is either a _query_ or _Object:Bounds, Node, Point2D, Rectangle, PointQuery, Scene, Window_ for identifying the element, see `3. Locating JavaFX Nodes`. 
+
+``logImage`` is a boolean value that specifies whether a captured image is also printed to test execution log. 
+
+ ``mapObject`` is a boolean value that specifies whether a captured image is saved as mapobject and returned from keyword. This uses Java heap memory which can result problems if large amount of image capture is done. If set False keyword returns null and image is not stored in library bookkeeping. 
+
+ 
+Example:
+| ${region}= | Create Rectangle | 11 | 22 | 33 | 44 | 
+| ${capture}= | Capture Image | ${region} | 
+| ${capture}= | Capture Image | ${node} | 
+| ${capture}= | Capture Image | ${window} | 
+| ${capture}= | Capture Image | | 
+| ${capture}= | Capture Image | id=id | logImage=False |
+| | Capture Image | id=id | logImage=true | mapObject=false |</doc>
+</kw>
+<kw name="Capture Primary Screen">
+<arguments>
+<arg>logImage=True</arg>
+<arg>mapObject=True</arg>
+</arguments>
+<doc>Returns a screenshot from whole primary screen. Note that this shows also other applications that are open.
+
+``logImage`` is a boolean value that specifies whether a captured image is also printed to test execution log. 
+
+ ``mapObject`` is a boolean value that specifies whether a captured image is saved as mapobject and returned from keyword. This uses Java heap memory which can result problems if large amount of image capture is done. If set False keyword returns null and image is not stored in library bookkeeping. 
+
+ 
+Example:
+| ${capture}= | Capture Primary Screen | 
+| ${capture}= | Capture Primary Screen | logImage=False |
+| | Capture Primary Screen | logImage=true | mapObject=false |</doc>
+</kw>
+<kw name="Capture Scene Containing Node">
+<arguments>
+<arg>locator</arg>
+<arg>logImage=True</arg>
+<arg>mapObject=True</arg>
+</arguments>
+<doc>Returns a screenshot of the scene containing given locator.
+
+``locator`` is a query locator, see `3.1 Locator syntax`.
+
+ ``logImage`` is a boolean value that specifies whether a captured image is also printed to test execution log. 
+
+ ``mapObject`` is a boolean value that specifies whether a captured image is saved as mapobject and returned from keyword. This uses Java heap memory which can result problems if large amount of image capture is done. If set False keyword returns null and image is not stored in library bookkeeping. 
+
+ 
+Example:
+| ${capture}= | Capture Scene Containing Node | ${node} | 
+| ${capture}= | Capture Scene Containing Node | id=id | logImage=False |
+| | Capture Scene Containing Node | id=id | logImage=true | mapObject=false |</doc>
+</kw>
+<kw name="Clear Object Map">
+<arguments>
+</arguments>
+<doc>Clears internal book keeping of all java objects.</doc>
+</kw>
+<kw name="Clear Text Input">
+<arguments>
+<arg>locator</arg>
+</arguments>
+<doc>Clears the text value of given TextInputControl
+
+``locator`` is either a _query_ or _TextInputControl_ object. For identifying the element, see `3. Locating JavaFX Nodes`. 
+
+
+Example:
+| Clear Text Input | .text-field |</doc>
+</kw>
+<kw name="Click On">
+<arguments>
+<arg>locator</arg>
+<arg>motion=DIRECT</arg>
+</arguments>
+<doc>Clicks an element specified by given locator.
+
+``locator`` is either a _query_ or _Object:Bounds, Node, Point2D, PointQuery, Scene, Window_ for identifying the element, see `3. Locating JavaFX Nodes`. 
+
+``motion`` defines the path for mouse to move to a target location. Default value is _DIRECT_. Especially with submenus, desired motion is usually HORIZONTAL_FIRST.
+
+
+Example:
+| Click On | ${node} | 
+| Click On | ${point} | 
+| Click On | id=node-id | 
+| Click On | css=.css-name | Motion=VERTICAL_FIRST |</doc>
+</kw>
+<kw name="Click On Coordinates">
+<arguments>
+<arg>x</arg>
+<arg>y</arg>
+<arg>motion=DIRECT</arg>
+</arguments>
+<doc>Moves mouse directly to the given coordinates and clicks the primary mouse button
+
+``x`` and ``y`` defines the coordinates as integer values. 
+
+Optional argument ``motion`` defines how mouse pointer is moved to target. Defaults to _DIRECT_.</doc>
+</kw>
+<kw name="Click On Mouse Button">
+<arguments>
+<arg>*buttons</arg>
+</arguments>
+<doc>Clicks whatever is under the mouse pointer. 
+
+``buttons`` is a list of mouse buttons to click. See `5. Used ENUMs` for different mouse buttons available.</doc>
+</kw>
+<kw name="Close Current Window">
+<arguments>
+</arguments>
+<doc>Closes the current window, same as ALT + F4 in Windows</doc>
+</kw>
+<kw name="Close Javafx Application">
+<arguments>
+</arguments>
+<doc>Closes JavaFX application.
+
+Example:
+| Close JavaFX Application |</doc>
+</kw>
+<kw name="Close Swing Application">
+<arguments>
+</arguments>
+<doc>Closes Wrapped Swing application.
+
+Example:
+| Close Swing Application |</doc>
+</kw>
+<kw name="Create Bounds">
+<arguments>
+<arg>minX</arg>
+<arg>minY</arg>
+<arg>width</arg>
+<arg>height</arg>
+</arguments>
+<doc>Creates a new Bounds object with the given parameters
+
+``minX``, ``minY``, ``width``, ``height`` are Double type arguments.
+
+
+Example:
+| ${target bounds}= | Create Bounds | 150 | 150 | 0 | 0 | 
+| ${capture}= | Capture Bounds | ${target bounds} |
+See more at: https://docs.oracle.com/javase/8/javafx/api/javafx/geometry/Bounds.html</doc>
+</kw>
+<kw name="Create Point">
+<arguments>
+<arg>x</arg>
+<arg>y</arg>
+</arguments>
+<doc>Creates a new Point2D object with the given parameters
+
+``x`` and ``y`` are both Double type arguments.
+
+
+Example:
+| ${point}= | Create Point | 150 | 150 | 
+| Drop To | ${point} | 
+See more at: https://docs.oracle.com/javase/8/javafx/api/javafx/geometry/Point2D.html</doc>
+</kw>
+<kw name="Create Rectangle">
+<arguments>
+<arg>minX</arg>
+<arg>minY</arg>
+<arg>width</arg>
+<arg>height</arg>
+</arguments>
+<doc>Creates a new Rectangle2D object with the given parameters
+
+``minX``, ``minY``, ``width``, ``height`` are Double type arguments.
+
+
+Example:
+| ${rectangle} | Create Rectangle | ${minX} | ${minY} | 240 | 240 | 
+| ${image1} | Capture Screen Region | ${rectangle} | 
+
+See more at: https://docs.oracle.com/javase/8/javafx/api/javafx/geometry/Rectangle2D.html</doc>
+</kw>
+<kw name="Double Click On">
+<arguments>
+<arg>locator</arg>
+<arg>motion=DIRECT</arg>
+</arguments>
+<doc>Double clicks an element specified by given locator.
+
+``locator`` is either a _query_ or _Object:Bounds, Node, Point2D, PointQuery, Scene, Window_ for identifying the element, see `3. Locating JavaFX Nodes`. 
+
+``motion`` defines the path for mouse to move to a target location. Default value is _DIRECT_.</doc>
+</kw>
+<kw name="Double Click On Coordinates">
+<arguments>
+<arg>x</arg>
+<arg>y</arg>
+<arg>motion=DIRECT</arg>
+</arguments>
+<doc>Moves mouse directly to the given coordinates and double clicks the primary mouse button
+
+``x`` and ``y`` defines the coordinates as integer values. 
+
+Optional argument ``motion`` defines how mouse pointer is moved to target. Defaults to _DIRECT_.</doc>
+</kw>
+<kw name="Double Click On Mouse Button">
+<arguments>
+<arg>*buttons</arg>
+</arguments>
+<doc>Double clicks whatever is under the mouse pointer. 
+
+``buttons`` is a list of mouse buttons to click. See `5. Used ENUMs` for different mouse buttons available.</doc>
+</kw>
+<kw name="Drag">
+<arguments>
+<arg>*buttons</arg>
+</arguments>
+<doc>Presses the given mouse button(s) on whatever is under the mouse's current location. 
+
+Optional parameter ``buttons`` is a list of mouse buttons to be used, defaults to PRIMARY. See `5. Used ENUMs` for different MouseButtons</doc>
+</kw>
+<kw name="Drag From">
+<arguments>
+<arg>locator</arg>
+<arg>button=PRIMARY</arg>
+</arguments>
+<doc>Moves mouse on top of the element located using given _locator_ and presses the given mouse _button_.
+
+ ``locator`` is either a _query_ or _Object:Bounds, Node, Point2D, PointQuery, Scene, Window_ for identifying the element, see `3. Locating JavaFX Nodes`. 
+
+Optional parameter ``button`` is the mouse button to be used, defaults to PRIMARY. See `5. Used ENUMs` for different MouseButtons
+
+
+Example:
+| ${node}= | Find | id=some-node-id | 
+| Drag From | ${node} | SECONDARY |</doc>
+</kw>
+<kw name="Drag From Coordinates">
+<arguments>
+<arg>x</arg>
+<arg>y</arg>
+<arg>*buttons</arg>
+</arguments>
+<doc>Moves the mouse to given coordinates _x_ and _y_ and presses the given mouse _buttons_
+
+Integer argument ``x`` sets the source point for x -coordinate
+
+Integer argument ``y`` sets the source point for y -coordinate
+
+Optional parameter ``buttons`` is a list of mouse buttons to be used, defaults to PRIMARY. See `5. Used ENUMs` for different MouseButtons
+
+
+Example:
+| ${window}= | Get Window | title=Window Title | 
+| Drag From Coordinates | ${x} | ${y} | 
+| Drop To | ${window} |</doc>
+</kw>
+<kw name="Drop">
+<arguments>
+</arguments>
+<doc>Releases the mouse at current position.</doc>
+</kw>
+<kw name="Drop By">
+<arguments>
+<arg>x</arg>
+<arg>y</arg>
+</arguments>
+<doc>Moves the mouse horizontally by _x_ and vertically by _y_ before releasing the mouse.
+
+Integer argument ``x`` is the amount how much to move the mouse horizontally
+Integer argument ``y`` is the amount how much to move the mouse vertically.
+
+Example:
+| Drag From | id=node-id css=.css-name | 
+| Drop By | -300 | 0 |</doc>
+</kw>
+<kw name="Drop To">
+<arguments>
+<arg>locator</arg>
+</arguments>
+<doc>Moves mouse on top of the element located using given _locator_ and and releases the mouse button.
+
+ ``locator`` is either a _query_ or _Object:Bounds, Node, Point2D, PointQuery, Scene, Window_ for identifying the element, see `3. Locating JavaFX Nodes`. 
+
+
+Example:
+| Drop To | id=some-node-id |</doc>
+</kw>
+<kw name="Drop To Coordinates">
+<arguments>
+<arg>x</arg>
+<arg>y</arg>
+</arguments>
+<doc>Moves the mouse to given coordinates _x_ and _y_ and releases mouse buttons
+
+Integer argument ``x`` sets the target point for x -coordinate
+
+Integer argument ``y`` sets the target point for y -coordinate
+
+
+Example:
+| Drag From | id=node-id | 
+| Drop To | 100 | 100 |</doc>
+</kw>
+<kw name="Erase Text">
+<arguments>
+<arg>amount</arg>
+</arguments>
+<doc>Erases the given number of characters from the active element.
+
+``amount`` is the number of characters to erase
+
+Example:
+| Erase Text | 5 |</doc>
+</kw>
+<kw name="Find">
+<arguments>
+<arg>query</arg>
+<arg>failIfNotFound=False</arg>
+<arg>root=</arg>
+</arguments>
+<doc>Returns the *first* node matching the query. 
+
+``query`` is a query locator, see `3. Locating JavaFX Nodes`.
+
+``failIfNotFound`` specifies if keyword should fail if nothing is found. By default it's false and keyword returns null in case lookup returns nothing.
+
+``root`` is an optional argument pointing to the element which is used as the origin of the lookup. If root is defined only its children can be found. By default nodes are being looked from everywhere.
+
+
+Example:
+| ${my node}= | Find | text="some text" | | | # finds node containing text _some text_ |
+| ${my node}= | Find | css=VBox | | | # finds node matching the CSS selector |
+| ${my node}= | Find | id=id | | | # finds node with matching _id_ |
+| ${my node}= | Find | xpath=//Rectangle | | | # finds node matching the XPath |
+| ${my node}= | Find | class=javafx.scene.shape.Rectangle | | | # finds node that is instance of the class |
+| ${my node}= | Find | pseudo=hover | | | # finds node containing the given pseudo class state |
+| ${my node}= | Find | id=id | True | | # this search fails if nothing is found |
+| ${my node}= | Find | css=VBox | False | ${root} | # finds node matching the CSS selector from the children of given root |
+
+Or chaining multiple queries together:
+| ${my node}= | Find | css=VBox HBox xpath=//Rectangle[@width="600.0"] | 
+The example above would first look for a node matching the css selector _VBox HBox_, then continue the search using the found HBox as a root node, while looking for a node matching the XPath.</doc>
+</kw>
+<kw name="Find All">
+<arguments>
+<arg>query</arg>
+<arg>failIfNotFound=False</arg>
+<arg>root=</arg>
+</arguments>
+<doc>Returns *all* nodes matching the query. 
+
+``query`` is a query locator, see `3.1 Locator syntax`.
+
+``failIfNotFound`` specifies if keyword should fail if nothing is found. By default it's false and keyword returns null in case lookup returns nothing.
+
+``root`` is an optional argument pointing to the element which is used as the origin of the lookup. If root is defined only its children can be found. By default nodes are being looked from everywhere.
+
+See keyword `Find` for further examples of query usage.</doc>
+</kw>
+<kw name="Get Bounds">
+<arguments>
+<arg>locator</arg>
+</arguments>
+<doc>Returns a Bounds object for a region located using given locator. 
+
+``locator`` is either a _query_ or _Object:Node, Point2D, Scene, or Window_ for identifying the region, see `3. Locating JavaFX Nodes`. 
+
+
+Example:
+| ${bounds}= | Get Bounds | ${node} | 
+| ${target}= | Create Bounds | 150 | 150 | 200 | 200 | 
+| Should Be Equal | ${bounds} | ${target} |</doc>
+</kw>
+<kw name="Get Check Box Selection">
+<arguments>
+<arg>locator</arg>
+</arguments>
+<doc>Returns the 'Selected' value(true/false) for given checkbox. 
+
+``locator`` is either a _query_ or _Object:Node_ for identifying the CheckBox element, see `3. Locating JavaFX Nodes`.</doc>
+</kw>
+<kw name="Get Context Menu Items">
+<arguments>
+<arg>locator=</arg>
+</arguments>
+<doc>Returns context menu items as a dictionary containing menu name:node pairs. 
+
+Optional parameter ``locator`` is an _Object:Window_ for specifying which contextMenu(window) items should be collected. Default value is the last window returned by `Get Target Windows` -keyword. 
+
+Examples:
+| Click On | id=menu-button-id | 
+| ${menu items}= | Get Context Menu Items | 
+| Dictionary Should Contain Key | ${menu items} | menu item name| Click On | &amp;{menu items}[menu item name] |</doc>
+</kw>
+<kw name="Get Current Application">
+<arguments>
+</arguments>
+<doc>Returns the class name of currently active JavaFX Application</doc>
+</kw>
+<kw name="Get Library Version">
+<arguments>
+</arguments>
+<doc>Returns the JavaFXLibrary version.</doc>
+</kw>
+<kw name="Get Node Image Url">
+<arguments>
+<arg>node</arg>
+</arguments>
+<doc>Returns image name and path of the node. 
+
+``locator`` is either a _query_ or _Object_ for a node whose getHeight method will be called, see `3. Locating JavaFX Nodes`. 
+
+Returns full image path by subsequently calling impl_getUrl -method. 
+
+Note, impl_getUrl -method is deprecated! Support for this method will be removed from Java in the future.</doc>
+</kw>
+<kw name="Get Node Parent">
+<arguments>
+<arg>locator</arg>
+</arguments>
+<doc>Returns the parent node of node. 
+
+``locator`` is either a _query_ or _Object_ for a node whose getParent method will be called, see `3. Locating JavaFX Nodes`.</doc>
+</kw>
+<kw name="Get Node Text">
+<arguments>
+<arg>locator</arg>
+</arguments>
+<doc>Returns text value of the Node. 
+
+``locator`` is either a _query_ or _Object_ for a node whose getText method will be called, see `3. Locating JavaFX Nodes`.</doc>
+</kw>
+<kw name="Get Object Class Name">
+<arguments>
+<arg>locator</arg>
+</arguments>
+<doc>Returns the class name of a given node. 
+
+``locator`` is either a _query_ or _Object_ for a node whose getSimpleName method will be called, see `3. Locating JavaFX Nodes`.</doc>
+</kw>
+<kw name="Get Object Property">
+<arguments>
+<arg>object</arg>
+<arg>fieldName</arg>
+</arguments>
+<doc>Returns the value of the given field
+
+``object`` is a _Object:Node_ whose property values are to be checked, see `3.2 Using locators as keyword arguments`. 
+
+``fieldName`` is a String specifying which field value should be read</doc>
+</kw>
+<kw name="Get Primary Screen Bounds">
+<arguments>
+</arguments>
+<doc>Returns the bounds of primary screen.</doc>
+</kw>
+<kw name="Get Progress Bar Value">
+<arguments>
+<arg>locator</arg>
+</arguments>
+<doc>Returns the current value for given ProgressBar element. 
+
+``locator`` is either a _query_ or _Object:Node_ for identifying the ToggleButton element, see  `3. Locating JavaFX Nodes`.</doc>
+</kw>
+<kw name="Get Pseudo Class States">
+<arguments>
+<arg>node</arg>
+</arguments>
+<doc>Calls getPseudoClassStates() -method for a given node and returns a list of values returned by the method.
+
+``locator`` is either a _query_ or _Object_ for node whose pseudo class states will be queried, see `3. Locating JavaFX Nodes`. 
+
+
+Example:
+| ${states}= | Get Pseudo Class States | ${node} | 
+| Log List | ${states} |</doc>
+</kw>
+<kw name="Get Root Node Of">
+<arguments>
+<arg>locator</arg>
+</arguments>
+<doc>Returns the root node of given element.
+
+``locator`` is either a _query_ or _Object:Node, Window, Scene_ for identifying the element, see `3. Locating JavaFX Nodes`. 
+
+
+Examples for different kind of locators: 
+
+Window:
+| ${window}= | Get Window | title=ClickRobot Test | 
+| ${node}= | Get Root Node Of | ${window} | 
+Scene:
+| ${some scene}= | Get Nodes Scene | ${some node} | 
+| ${root} | Get Root Node Of | ${some scene} | 
+Node:
+| ${some node}= | find | id=some-node-id | 
+| ${root} | Get Root Node Of | ${some node} | 
+Query:
+| ${root} | Get Root Node Of | id=some-node-id |</doc>
+</kw>
+<kw name="Get Scene">
+<arguments>
+<arg>locator</arg>
+</arguments>
+<doc>Returns Scene of the given object. 
+
+``locator`` is either a _query_, a _Node_ or a _Window_, see `3.2 Using locators as keyword arguments`</doc>
+</kw>
+<kw name="Get Screenshot Directory">
+<arguments>
+</arguments>
+<doc>Gets the screenshot directory for current application</doc>
+</kw>
+<kw name="Get Scroll Bar Max Value">
+<arguments>
+<arg>locator</arg>
+</arguments>
+<doc>Gets the max value for a given scrollbar. 
+
+``locator`` is either a _query_ or _Object:Node_ for identifying the ScrollBar element, see `3. Locating JavaFX Nodes`.</doc>
+</kw>
+<kw name="Get Scroll Bar Min Value">
+<arguments>
+<arg>locator</arg>
+</arguments>
+<doc>Gets the min value for a given scrollbar. 
+
+``locator`` is either a _query_ or _Object:Node_ for identifying the ScrollBar element, see `3. Locating JavaFX Nodes`.</doc>
+</kw>
+<kw name="Get Scroll Bar Value">
+<arguments>
+<arg>locator</arg>
+</arguments>
+<doc>Gets the current value for a given scrollbar 
+
+``locator`` is either a _query_ or _Object:Node_ for identifying the ScrollBar element, see `3. Locating JavaFX Nodes`.</doc>
+</kw>
+<kw name="Get Scroll Pane Horizontal Value">
+<arguments>
+<arg>locator</arg>
+</arguments>
+<doc>Returns the horizontal value for given ScrollPane element. 
+
+``locator`` is either a _query_ or _Object:Node_ for identifying the ScrollPane element, see `3. Locating JavaFX Nodes`.</doc>
+</kw>
+<kw name="Get Scroll Pane Vertical Value">
+<arguments>
+<arg>locator</arg>
+</arguments>
+<doc>Returns the vertical value for given ScrollPane element. 
+
+``locator`` is either a _query_ or _Object:Node_ for identifying the ScrollPane element, see `3. Locating JavaFX Nodes`.</doc>
+</kw>
+<kw name="Get Selected Date Picker Date">
+<arguments>
+<arg>locator</arg>
+</arguments>
+<doc>Returns the selected date from given DatePicker element
+
+``locator`` is either a _query_ or _Object:Node_ for identifying the DatePicker element, see `3. Locating JavaFX Nodes`. 
+
+
+Example:
+| ${date}= | Get Selected Date Picker Date | \#datepicker-id |</doc>
+</kw>
+<kw name="Get Selected Radio Button">
+<arguments>
+<arg>locator</arg>
+</arguments>
+<doc>Returns the selected RadioButton Node from the same group as given locator points to.
+
+``locator`` is either a _query_ or _Object:Node_ for identifying the RadioButton element, see `3. Locating JavaFX Nodes`.</doc>
+</kw>
+<kw name="Get Selected Tab Pane Tab">
+<arguments>
+<arg>locator</arg>
+</arguments>
+<doc>Returns the selected TabPane Tab as a dictionary entry in form of 'name : Node' pair.
+
+``locator`` is either a _query_ or _Object:Node_ for identifying the TabPane element, see `3. Locating JavaFX Nodes`. 
+
+
+Example:
+| ${tab}= | Get Tab Pane Selected Tab | id=pane-id | 
+| Dictionary Should contain Key | ${tab} | tab name |</doc>
+</kw>
+<kw name="Get Spinner Value">
+<arguments>
+<arg>locator</arg>
+</arguments>
+<doc>Returns the current value of given spinner element. 
+``locator`` is either a _query_ or _Object:Node_ for identifying the Spinner element, see `3. Locating JavaFX Nodes`.</doc>
+</kw>
+<kw name="Get System Property">
+<arguments>
+<arg>name</arg>
+</arguments>
+<doc>Returns given system property value.
+``name`` is the system property name to fetch. 
+
+Example:
+| ${locale}= | Get System Property | locale |</doc>
+</kw>
+<kw name="Get Tab Pane Tabs">
+<arguments>
+<arg>locator</arg>
+</arguments>
+<doc>Returns a dictionary containing key:value pairs for each tab name and tab content(Node).
+
+``locator`` is either a _query_ or _Object:Node_ for identifying the TabPane element, see `3. Locating JavaFX Nodes`. 
+
+
+Example:
+| ${tabs}= | Get Tab pane Tabs | id=tab-pane-id | 
+| Dictionary Should Contain Key | ${tabs} | tab name |</doc>
+</kw>
+<kw name="Get Table Cell">
+<arguments>
+<arg>table</arg>
+<arg>row</arg>
+<arg>column</arg>
+</arguments>
+<doc>Returns the Node of cell in the given table location
+
+``locator`` is either a _query_ or _Object:Node_ for identifying the TableView element, see `3. Locating JavaFX Nodes`. 
+
+``row`` Integer value for the row
+
+``column`` Integer value for the column</doc>
+</kw>
+<kw name="Get Table Cell Value">
+<arguments>
+<arg>table</arg>
+<arg>row</arg>
+<arg>column</arg>
+</arguments>
+<doc>Returns the value of cell in the given location
+
+``locator`` is either a _query_ or _Object:Node_ for identifying the TableView element, see `3. Locating JavaFX Nodes`. 
+
+``row`` Integer value for the row
+
+``column`` Integer value for the column</doc>
+</kw>
+<kw name="Get Table Column Cells">
+<arguments>
+<arg>table</arg>
+<arg>column</arg>
+</arguments>
+<doc>Returns a list of *visible* cells(Nodes) of the given table column.
+
+``locator`` is either a _query_ or _Object:Node_ for identifying the TableView element, see `3. Locating JavaFX Nodes`. 
+
+``column`` Integer value for the column</doc>
+</kw>
+<kw name="Get Table Column Count">
+<arguments>
+<arg>table</arg>
+</arguments>
+<doc>Returns the column count of the given table
+
+``locator`` is either a _query_ or _Object:Node_ for identifying the TableView element, see `3. Locating JavaFX Nodes`.</doc>
+</kw>
+<kw name="Get Table Column Values">
+<arguments>
+<arg>table</arg>
+<arg>column</arg>
+</arguments>
+<doc>Returns list of values of the given table column.
+
+``locator`` is either a _query_ or _Object:Node_ for identifying the TableView element, see `3. Locating JavaFX Nodes`. 
+
+``column`` Integer value for the column</doc>
+</kw>
+<kw name="Get Table Row Cells">
+<arguments>
+<arg>table</arg>
+<arg>row</arg>
+</arguments>
+<doc>Returns the given table row cells in a dictionary in form of name:node pairs. 
+
+``locator`` is either a _query_ or _Object:Node_ for identifying the TableView element, see `3. Locating JavaFX Nodes`. 
+
+``row`` Integer value for the column
+Example:
+| ${row cells}= | Get Table Row Cells | id=table-id | ${2} | 
+| Dictionary Should Contain Key | ${row cells} | column name | 
+| ${cell text}= | Get Node Text | &amp;{row cells}[column name] | # assuming that cell is a node that has a text value |</doc>
+</kw>
+<kw name="Get Table Row Values">
+<arguments>
+<arg>table</arg>
+<arg>row</arg>
+</arguments>
+<doc>Returns the given table row cells in a dictionary in form of name:node pairs. 
+
+``locator`` is either a _query_ or _Object:Node_ for identifying the TableView element, see `3. Locating JavaFX Nodes`. 
+
+``row`` Integer value for the column
+Example:
+| ${row cells}= | Get Table Row Cells | id=table-id | ${2} | 
+| Dictionary Should Contain Key | ${row cells} | column name | 
+| ${cell text}= | Get Node Text | &amp;{row cells}[column name] | # assuming that cell is a node that has a text value |</doc>
+</kw>
+<kw name="Get Target Window">
+<arguments>
+</arguments>
+<doc>Returns the last stored target window
+
+
+Example: 
+| ${window}= | Get Target Window |</doc>
+</kw>
+<kw name="Get Window">
+<arguments>
+<arg>locator</arg>
+</arguments>
+<doc>Returns window object.
+
+``locator`` is either a _query_ or _Object:Node, Scene_ for identifying the Window. In addition to normal _query_, locator can be a search string for _pattern=_, _title=_ or Integer number. See `3. Locating JavaFX Nodes`. 
+
+
+Examples for different kind of locators: 
+
+Pattern (defaults to title):
+| ${window}= | Get Window | My window title | 
+| ${window}= | Get Window | title=My window title | 
+| ${window}= | Get Window | pattern=W[i-w]{5} Title | 
+
+Index:
+| ${window}= | Get Window | 0 | 
+| ${window}= | Get Window | ${2} | 
+
+Node:
+| ${some_node}= | Find | id=some_id | 
+| ${window}= | Get Window | ${some_node} | 
+
+Scene: 
+| ${some_scene}= | Get Nodes Scene | ${some_node} | 
+| ${window}= | Get Window | ${some_scene} |</doc>
+</kw>
+<kw name="Get Window Title">
+<arguments>
+<arg>window</arg>
+</arguments>
+<doc>Returns the title of the given window. 
+
+``locator`` is an _Object:Window_ whose getTitle method will be called, see `3.2 Using locators as keyword arguments`. This keyword can be coupled with e.g. `List Windows` -keyword.</doc>
+</kw>
+<kw name="Images Should Match">
+<arguments>
+<arg>image1</arg>
+<arg>image2</arg>
+<arg>percentage=100</arg>
+</arguments>
+<doc>Fails if images are not similar enough
+
+``image1`` is an _Object:Image_ for the first comparable image.
+
+``image2`` is an _Object:Image_ for the second comparable image.
+
+``percentage`` the percentage of pixels that should match, defaults to 100.
+
+This keyword can be coupled with e.g. `Capture Image` -keyword.</doc>
+</kw>
+<kw name="Images Should Not Match">
+<arguments>
+<arg>image1</arg>
+<arg>image2</arg>
+<arg>percentage=100</arg>
+</arguments>
+<doc>Fails if images are too similar
+
+``image1`` is an _Object:Image_ for the first comparable image.
+
+``image2`` is an _Object:Image_ for the second comparable image.
+
+``percentage`` the percentage of pixels that should not match, defaults to 100.
+
+This keyword can be coupled with e.g. `Capture Image` -keyword.</doc>
+</kw>
+<kw name="Is Java Agent">
+<arguments>
+</arguments>
+<doc>Returns if JavaFXLibrary is started as java agent.</doc>
+</kw>
+<kw name="Launch Javafx Application">
+<arguments>
+<arg>appName</arg>
+<arg>*args</arg>
+</arguments>
+<doc>Launches JavaFX application with the given arguments.
+
+``appName`` is the name of the application to launch. 
+
+``appArgs`` is a list of arguments to be passed for the application. 
+
+Example:
+| Launch JavaFX Application | _javafxlibrary.testapps.MenuApp_ |
+| Launch JavaFX Application | _TestApplication.jar_ |</doc>
+</kw>
+<kw name="Launch Swing Application">
+<arguments>
+<arg>appName</arg>
+<arg>*args</arg>
+</arguments>
+<doc>Creates a JavaFX wrapper for the given Swing application and launches it. This allows testing Swing embedded JavaFX components. Custom wrappers can be used with Launch Javafx Application keyword, see [https://github.com/eficode/JavaFXLibrary/blob/master/src/main/java/javafxlibrary/testapps/SwingApplicationWrapper.java|SwingApplicationWrapper.java] for example.
+
+``appName`` is the name of the application to launch. 
+
+``appArgs`` is a list of arguments to be passed for the application. 
+
+Example:
+| Launch Swing Application | _javafxlibrary.testapps.SwingApplication_ |
+| Launch Swing Application | _TestApplication.jar_ |</doc>
+</kw>
+<kw name="Launch Swing Application In Separate Thread">
+<arguments>
+<arg>appName</arg>
+<arg>*args</arg>
+</arguments>
+<doc>Creates a wrapper application the same way as in `Launch Swing Application`, but starts it in a new thread. This is required when main method of the test application is blocked and execution does not return after calling it until the application gets closed. Be sure to set the library timeout with `Set Timeout` so that the test application will have enough time to load, as the test execution will continue instantly after calling the main method.
+
+``appName`` is the name of the application to launch. 
+
+``appArgs`` is a list of arguments to be passed for the application. 
+
+Example:
+| Launch Swing Application In Separate Thread | _javafxlibrary.testapps.SwingApplication_ |
+| Launch Swing Application In Separate Thread | _TestApplication.jar_ |</doc>
+</kw>
+<kw name="List Node Methods">
+<arguments>
+<arg>node</arg>
+</arguments>
+<doc>Lists methods available for given node.
+``node`` is the Object:Node which methods to list, see `3.2 Using locators as keyword arguments`. 
+
+When working with custom components you may use this keyword to discover methods you can call with `Call Object Method` or `Call Object Method In Fx Application Thread` keyword.
+
+Example:
+| List Node Methods | ${my node} |</doc>
+</kw>
+<kw name="List Target Windows">
+<arguments>
+</arguments>
+<doc>Returns a list of windows that are ordered by proximity to the last target window.</doc>
+</kw>
+<kw name="List Windows">
+<arguments>
+</arguments>
+<doc>Returns a list of all available windows currently open. 
+
+ 
+Example:
+| ${windows}= | List Windows | 
+| Log List | ${windows} |</doc>
+</kw>
+<kw name="Load Image">
+<arguments>
+<arg>path</arg>
+</arguments>
+<doc>Loads an image from the given _path_ in hard drive 
+
+``path`` is the source path for image in local hard drive. 
+
+
+Example:
+| ${image}= | Load Image | ${path to image}node.png |</doc>
+</kw>
+<kw name="Load Image From Url">
+<arguments>
+<arg>url</arg>
+</arguments>
+<doc>Loads an image from the given _url_
+
+``url`` is the url for the source image. 
+
+
+Example:
+| ${path}= | Set Variable | http://i.imgur.com | 
+| ${image}= | Load Image From Url | ${path}/A99VNbK.png |</doc>
+</kw>
+<kw name="Log Application Classpath">
+<arguments>
+</arguments>
+<doc>Logs current classpath content</doc>
+</kw>
+<kw name="Log FXML">
+<arguments>
+<arg>root=</arg>
+</arguments>
+<doc>Generates and prints FXML representation of the application starting from a given node.
+
+Optional argument ``root`` is the starting point from where to start listing child nodes, see `3.2 Using locators as keyword arguments`. Defaults to root node of current window. 
+
+
+Example:
+| ${my node}= | Find | id=node-id | 
+| Log FXML | ${my node} |</doc>
+</kw>
+<kw name="Log System Properties">
+<arguments>
+</arguments>
+<doc>Prints all system properties that has been set with *Set System Property* -keyword</doc>
+</kw>
+<kw name="Move By">
+<arguments>
+<arg>x</arg>
+<arg>y</arg>
+<arg>motion=DIRECT</arg>
+</arguments>
+<doc>Moves mouse directly from current location to new location specified by _x_ and _y_ offsets
+
+``x`` is an integer value for horizontal axis x-offset. 
+
+``y`` is an integer value for vertical axis y-offset. 
+
+Optional argument ``motion`` defines the path for mouse to move to given coordinates. Default value is _DIRECT_. 
+
+
+Example: 
+| Move By | 75 | 75 |</doc>
+</kw>
+<kw name="Move To">
+<arguments>
+<arg>locator</arg>
+<arg>motion=DIRECT</arg>
+</arguments>
+<doc>Moves mouse over a node located using given locator.
+
+ ``locator`` is either a _query_ or _Object:Bounds, Node, Point2D, PointQuery, Scene, Window_ for identifying the element, see `3. Locating JavaFX Nodes`. 
+
+``motion`` defines the path for mouse to move to a target location. Default value is _DIRECT_. 
+
+
+Example: 
+| ${x} | Evaluate | ${400} + ${SCENE_MINX} | 
+| ${y} | Evaluate | ${150} + ${SCENE_MINY} | 
+| ${point} | Create Point | ${x} | ${y} | 
+| Move To | ${POINT} | VERTICAL_FIRST | | # moves mouse on top of given Point object by moving first vertically and then horizontally |</doc>
+</kw>
+<kw name="Move To Coordinates">
+<arguments>
+<arg>x</arg>
+<arg>y</arg>
+<arg>motion=DIRECT</arg>
+</arguments>
+<doc>Moves mouse to given coordinates.
+
+``x`` is an integer value for horizontal axis x-coordinate. 
+
+``y`` is an integer value for vertical axis y-coordinate. 
+
+Optional argument ``motion`` defines the path for mouse to move to given coordinates. Default value is _DIRECT_. 
+
+
+Example: 
+| ${x} | Evaluate | ${SCENE_MINX} + ${200} | 
+ | ${y} | Evaluate | ${SCENE_MINY} + ${200} | 
+ | Move To Coordinates | ${x} | ${y} | HORIZONTAL_FIRST | 
+| Label Text Should Be | \#locationLabel | 200 | 200 |</doc>
+</kw>
+<kw name="Node Should Be Enabled">
+<arguments>
+<arg>locator</arg>
+</arguments>
+<doc>Verifies that node is enabled. 
+
+``locator`` is either a _query_ or _Object:Node_ for identifying the Node, see `3. Locating JavaFX Nodes`.</doc>
+</kw>
+<kw name="Node Should Be Focused">
+<arguments>
+<arg>locator</arg>
+</arguments>
+<doc>Verifies that node is focused. 
+
+``locator`` is either a _query_ or _Object:Node_ for identifying the Node, see `3. Locating JavaFX Nodes`.</doc>
+</kw>
+<kw name="Node Should Be Hoverable">
+<arguments>
+<arg>locator</arg>
+</arguments>
+<doc>Verifies that node is hoverable with mouse. 
+
+``locator`` is either a _query_ or _Object:Node_ for identifying the Node, see `3. Locating JavaFX Nodes`.</doc>
+</kw>
+<kw name="Node Should Be Visible">
+<arguments>
+<arg>locator</arg>
+</arguments>
+<doc>Verifies that node is visible. 
+
+``locator`` is either a _query_ or _Object:Node_ for identifying the Node, see `3. Locating JavaFX Nodes`.</doc>
+</kw>
+<kw name="Node Should Have Text">
+<arguments>
+<arg>locator</arg>
+<arg>text</arg>
+</arguments>
+<doc>Verifies that given node has text. 
+
+``locator`` is either a _query_ or _Object:Node_ for identifying the Node, see `3. Locating JavaFX Nodes`. 
+
+``text`` is the String to be searched for</doc>
+</kw>
+<kw name="Node Should Not Be Enabled">
+<arguments>
+<arg>locator</arg>
+</arguments>
+<doc>Verifies that node is disabled. 
+
+``locator`` is either a _query_ or _Object:Node_ for identifying the Node, see `3. Locating JavaFX Nodes`.</doc>
+</kw>
+<kw name="Node Should Not Be Focused">
+<arguments>
+<arg>locator</arg>
+</arguments>
+<doc>Verifies that node is not focused. 
+
+``locator`` is either a _query_ or _Object:Node_ for identifying the Node, see `3. Locating JavaFX Nodes`.</doc>
+</kw>
+<kw name="Node Should Not Be Hoverable">
+<arguments>
+<arg>locator</arg>
+</arguments>
+<doc>Verifies that node is not hoverable with mouse. 
+
+``locator`` is either a _query_ or _Object:Node_ for identifying the Node, see `3. Locating JavaFX Nodes`.</doc>
+</kw>
+<kw name="Node Should Not Be Visible">
+<arguments>
+<arg>locator</arg>
+</arguments>
+<doc>Verifies that node is invisible. 
+
+``locator`` is either a _query_ or _Object:Node_ for identifying the Node, see `3. Locating JavaFX Nodes`.</doc>
+</kw>
+<kw name="Node Should Not Have Text">
+<arguments>
+<arg>locator</arg>
+<arg>text</arg>
+</arguments>
+<doc>Verifies that given node has not text. 
+
+``locator`` is either a _query_ or _Object:Node_ for identifying the Node, see `3. Locating JavaFX Nodes`. 
+
+``text`` is the String to be searched for</doc>
+</kw>
+<kw name="Point To">
+<arguments>
+<arg>locator</arg>
+</arguments>
+<doc>Sets the current position pointer to a point located using given locator and returns a PointQuery object for it. 
+
+``locator`` is either a _query_ or _Object:Bounds, Node, Point2D, Scene, Window_ for identifying the element, see `3. Locating JavaFX Nodes`. 
+
+
+Example: 
+| ${point query}= | Point To | ${node} |
+| Move To | ${point query} | 
+| ${point query position}= | Call Method | ${point query} | getPosition | 
+| Set Target Position | BOTTOM_RIGHT | 
+| ${point query}= | Point To | ${some node} | 
+| Move To | ${point query} | | | # moves to bottom right corner of a node that was stored in PointQuery object. |</doc>
+</kw>
+<kw name="Point To Coordinates">
+<arguments>
+<arg>x</arg>
+<arg>y</arg>
+</arguments>
+<doc>Sets the current position pointer to new location based on x,y coordinates and returns a PointQuery object for it.
+
+``x`` and ``y`` defines the Integer values for the x- and y -coordinates.
+
+
+Example: 
+| ${point query}= | Point To Coordinates | 100 | 200 |</doc>
+</kw>
+<kw name="Point To With Offset">
+<arguments>
+<arg>locator</arg>
+<arg>offsetX</arg>
+<arg>offsetY</arg>
+</arguments>
+<doc>Convenience method: Creates and returns a PointQuery pointing to the target with the given offset values. 
+
+``locator`` is either a _query_ or _Object:Bounds, Node, Point2D, Scene, Window_ for identifying the element, see `3. Locating JavaFX Nodes`. 
+
+Parameters ``offsetX`` and ``offsetY`` are Double type values for x- and y-axis offsets.
+ 
+Example: 
+| ${point query}= | Point To With Offset | ${some node} | 10.0 | -10.0 | 
+| ${point query offset}= | Call Method | ${point query} | getOffset |</doc>
+</kw>
+<kw name="Press">
+<arguments>
+<arg>*keys</arg>
+</arguments>
+<doc>Presses given keys, until explicitly released via keyword 'Release'. Once pressed, 
+
+``keys`` is the list of keys to be pressed, see a list of different KeyCodes in `5. Used ENUMs`. 
+
+
+Example: 
+| Press | CONTROL | SHIFT | G |</doc>
+</kw>
+<kw name="Press Mouse Button">
+<arguments>
+<arg>*buttons</arg>
+</arguments>
+<doc>Presses and holds mouse buttons.
+
+``buttons`` is a list of mouse buttons to press. Defaults to _PRIMARY_, see `5. Used ENUMs` for different mouse buttons. 
+Example: 
+| Press Mouse Button | PRIMARY |</doc>
+</kw>
+<kw name="Print Child Nodes">
+<arguments>
+<arg>root=</arg>
+</arguments>
+<doc>Prints all child nodes starting from a given node.
+
+Optional argument ``root`` is the starting point from where to start listing child nodes, see `3.2 Using locators as keyword arguments`. Defaults to root node of current window. 
+
+
+Example:
+| ${my node}= | Find | id=node-id | 
+| Print Child Nodes | ${my node} |</doc>
+</kw>
+<kw name="Print Object Properties">
+<arguments>
+<arg>object</arg>
+</arguments>
+<doc>Prints a list of all fields and their values of the given Java object
+
+``object`` is a _Object:Node_ whose property field values will be printed, see `3.2 Using locators as keyword arguments`.</doc>
+</kw>
+<kw name="Push">
+<arguments>
+<arg>*keys</arg>
+</arguments>
+<doc>Pushes a given key/key combination.
+
+``keys`` is the list of keys to be pushed, see a list of different KeyCodes in `5. Used ENUMs`. 
+
+
+Example:
+| Push | CONTROL | SHIFT | G |</doc>
+</kw>
+<kw name="Push In Order">
+<arguments>
+<arg>*keys</arg>
+</arguments>
+<doc>Pushes given keys one at a time.
+
+``keys`` is the list of keys to be pushed, see a list of different KeyCodes in `5. Used ENUMs`. 
+
+
+Example:
+| Push In Order | H | e | l | l | o | 
+| Push In Order | BACK_SPACE | LEFT | BACK_SPACE |</doc>
+</kw>
+<kw name="Push Many Times">
+<arguments>
+<arg>times</arg>
+<arg>*keys</arg>
+</arguments>
+<doc>Pushes a given key/key combination multiple times.
+
+``times`` defines how many times to push
+``keys`` is the key combination to push, see a list of different KeyCodes in `5. Used ENUMs`. 
+
+
+Example:
+| Push Many Times | 2 | LEFT | 
+| Push Many Times | 5 | SHIFT | X |</doc>
+</kw>
+<kw name="Radio Button Should Be Selected">
+<arguments>
+<arg>locator</arg>
+</arguments>
+<doc>Verifies that RadioButton is selected. 
+
+``locator`` is either a _query_ or _Object:Node_ for identifying the RadioButton element, see `3. Locating JavaFX Nodes`.</doc>
+</kw>
+<kw name="Radio Button Should Not Be Selected">
+<arguments>
+<arg>locator</arg>
+</arguments>
+<doc>Verifies that RadioButton is not selected. 
+
+``locator`` is either a _query_ or _Object:Node_ for identifying the RadioButton element, see `3. Locating JavaFX Nodes`.</doc>
+</kw>
+<kw name="Release">
+<arguments>
+<arg>*keys</arg>
+</arguments>
+<doc>Releases given keys. 
+
+``keys`` is the list of keys to be released, see a list of different KeyCodes in `5. Used ENUMs`. 
+
+
+Example: 
+| Release | CONTROL | SHIFT | G | 
+Note: passing in an empty list will release all pressed keys.</doc>
+</kw>
+<kw name="Release Mouse Button">
+<arguments>
+<arg>*buttons</arg>
+</arguments>
+<doc>Releases pressed mouse buttons.
+
+``buttons`` is a list of mouse buttons to release. Defaults to _PRIMARY_, see `5. Used ENUMs` for different mouse buttons. 
+Example: 
+| Release Mouse Button | SECONDARY |</doc>
+</kw>
+<kw name="Right Click On">
+<arguments>
+<arg>locator</arg>
+<arg>motion=DIRECT</arg>
+</arguments>
+<doc>Right clicks an element specified by given locator.
+
+``locator`` is either a _query_ or _Object:Bounds, Node, Point2D, PointQuery, Scene, Window_ for identifying the element, see `3. Locating JavaFX Nodes`. 
+
+``motion`` defines the path for mouse to move to a target location. Default value is _DIRECT_. Especially with submenus, desired motion is usually HORIZONTAL_FIRST.</doc>
+</kw>
+<kw name="Right Click On Coordinates">
+<arguments>
+<arg>x</arg>
+<arg>y</arg>
+<arg>motion=DIRECT</arg>
+</arguments>
+<doc>Moves mouse directly to the given coordinates and right clicks the primary mouse button
+
+``x`` and ``y`` defines the coordinates as integer values. 
+
+Optional argument ``motion`` defines how mouse pointer is moved to target. Defaults to _DIRECT_.</doc>
+</kw>
+<kw name="Right Click On Mouse Button">
+<arguments>
+</arguments>
+<doc>Clicks right mouse button on whatever is under the mouse pointer</doc>
+</kw>
+<kw name="Save Image As">
+<arguments>
+<arg>image</arg>
+<arg>path</arg>
+</arguments>
+<doc>Saves given image to given location
+
+``image`` is the target _Object:Image_ to be saved
+``path`` is the target location where image will be saved</doc>
+</kw>
+<kw name="Scroll Horizontally">
+<arguments>
+<arg>direction</arg>
+<arg>amount=1</arg>
+</arguments>
+<doc>Scrolls horizontally by amount (in terms of ticks of a mouse wheel) in given direction.
+
+``amount`` is the number of scroll ticks, defaults to 1. 
+
+``direction`` specifies whether to scroll RIGHT or LEFT. 
+
+
+Example:
+| Move To | ${some node} | 
+| Scroll Horizontally | RIGHT |</doc>
+</kw>
+<kw name="Scroll Vertically">
+<arguments>
+<arg>direction</arg>
+<arg>amount=1</arg>
+</arguments>
+<doc>Scrolls vertically by amount (in terms of ticks of a mouse wheel) in given direction.
+
+``amount`` is the number of scroll ticks, defaults to 1. 
+
+``direction`` specifies whether to scroll UP or DOWN. 
+
+
+Example:
+| Move To | ${some node} | 
+| Scroll Vertically | DOWN | 25 |</doc>
+</kw>
+<kw name="Select All">
+<arguments>
+</arguments>
+<doc>Pushes CTRL/CMD + A key combination to select all.</doc>
+</kw>
+<kw name="Select Context Menu Item">
+<arguments>
+<arg>item</arg>
+</arguments>
+<doc>Clicks the given item from menu
+
+``item`` is the name for the Context Menu item to be clicked. This keyword clicks the first menu item that matches the given item name. Search of an item is started from the last target window.
+
+Example:
+| Click On | id=menu-button-id | 
+| Select Context Menu Item | menu item name |</doc>
+</kw>
+<kw name="Select Tab Pane Tab">
+<arguments>
+<arg>locator</arg>
+<arg>tabName</arg>
+</arguments>
+<doc>Selects the given Tab from TabPane.
+
+``locator`` is either a _query_ or _Object:Node_ for identifying the TabPane element, see `3. Locating JavaFX Nodes`. 
+
+``tabName`` is the name of the tab to be selected
+
+Examples:
+| Select Tab Pane Tab | ${Tab Pane} | tab name | 
+| Select Tab Pane Tab | id=tab-id | tab name |</doc>
+</kw>
+<kw name="Set Image Logging">
+<arguments>
+<arg>value</arg>
+</arguments>
+<doc>Sets whether to embed log images directly into the log.html file or as a link to a file on local disk.
+
+Argument ``value`` is a string. Accepted values are ``embedded`` (initial value) and ``diskonly``. They can be given in uppercase as well. 
+
+
+Example:
+| Set Image Logging | DISKONLY |</doc>
+</kw>
+<kw name="Set Safe Clicking">
+<arguments>
+<arg>value</arg>
+</arguments>
+<doc>Enables/Disables clicking outside of visible JavaFX application windows. Safe clicking is on by default, preventing clicks outside of the tested application.
+
+``value`` can be any of the following: on, off.
+
+Parameter _value_ specifies whether safety should be toggled on or off</doc>
+</kw>
+<kw name="Set Screenshot Directory">
+<arguments>
+<arg>directory</arg>
+<arg>logDirectory=</arg>
+</arguments>
+<doc>Sets the screenshot directory for current application
+
+Notice that relative paths are from current work dir of JavaFXLibrary:
+- In case of Java Agent it comes from Application Under Test (AUT).
+- In case of JavaFXLibrary is started with "java -jar *" command it uses the current working directory as source.
+``directory`` is a path to a folder which is to be set as current screenshot directory in host where JavaFXLibrary is run.
+
+``logDirectory`` is a path that is put to log.html files that can be used after screenshots are moved from target system to e.g. CI workspace. Typically this is relative path.
+
+
+Example:
+| Set Screenshot Directory | /Users/robotuser/output/AUT-screenshots/ | ./output/AUT-screenshots/ | 
+or
+| Set Screenshot Directory | ./output/AUT-screenshots/ |</doc>
+</kw>
+<kw name="Set System Property">
+<arguments>
+<arg>name</arg>
+<arg>value</arg>
+</arguments>
+<doc>Sets system property ``name`` to ``value``. Equals command line usage `-Dname=value`.
+
+Example:
+| Set System Property | locale | en_US |</doc>
+</kw>
+<kw name="Set Target Position">
+<arguments>
+<arg>pointPosition</arg>
+</arguments>
+<doc>Stores the given position as the default offset for all point operations.
+
+``pointPosition`` sets the default offset for every use of `Point To` -keyword. Defaults to _CENTER_, see more at `5. Used ENUMs` and _Pos_ enum. 
+
+
+Example: 
+| Set Target Position | TOP_LEFT |</doc>
+</kw>
+<kw name="Set Target Window">
+<arguments>
+<arg>locator</arg>
+</arguments>
+<doc>Sets active target window
+
+``locator`` is either a _query_ or _Object:Node, Scene_ for identifying the Window. In addition to normal _query_, locator can be a search string for _pattern=_, _title=_ or Integer number. See `3. Locating JavaFX Nodes`. 
+
+
+Examples for different kind of locators: 
+
+pattern (defaults to title):
+| Set Target Window | My window title | 
+| Set Target Window | title=My window title | 
+| Set Target Window | pattern=W[i-w]{5} Title | 
+
+Index:
+| Set Target Window | 0 | 
+| Set Target Window | ${2} | 
+
+Node:
+| ${some_node}= | Find | id=some_id | 
+| Set Target Window | ${some_node} | 
+
+Scene: 
+| ${some_scene}= | Get Nodes Scene | ${some_node} | 
+| Set Target Window | ${some_scene} |</doc>
+</kw>
+<kw name="Set Timeout">
+<arguments>
+<arg>timeout</arg>
+</arguments>
+<doc>Sets the maximum time library waits for keyword to finish. Keyword returns old timeout value as return value. Default value is 10 seconds.
+
+``timeout`` is an Integer value for timeout in seconds.
+
+
+Example:
+| ${old_timeout}= | Set Timeout | 20 | 
+| Click On | id=myidthatshallcomeavailable | | 
+| [Teardown] | Set Timeout | ${old_timeout} |</doc>
+</kw>
+<kw name="Set To Classpath">
+<arguments>
+<arg>path</arg>
+<arg>failIfNotFound=False</arg>
+</arguments>
+<doc>Loads given path to classpath.
+
+``path`` is the path to add.
+
+``failIfNotFound`` is either True or False, default False. In case of False error is written as warning.
+
+If directory path has asterisk(*) after directory separator all jar files are added from directory.
+
+Example:
+| Set To Classpath | C:${/}users${/}my${/}test${/}folder | 
+| Set To Classpath | C:${/}users${/}my${/}test${/}folder${/}* | 
+| Set To Classpath | C:${/}users${/}my${/}test${/}folder2${/}* | failIfNotFound=${True} |</doc>
+</kw>
+<kw name="Set Write Speed">
+<arguments>
+<arg>milliseconds</arg>
+</arguments>
+<doc>Sets the time waited between every character when typing. Returns previous value.
+
+``milliseconds`` is the time waited between each character in milliseconds.</doc>
+</kw>
+<kw name="Switch Window">
+<arguments>
+<arg>switchAmount</arg>
+</arguments>
+<doc>Presses ALT/CMD + TAB for the given amount of times. 
+
+``switchAmount`` is an Integer value and specifies how many switches will be made in total</doc>
+</kw>
+<kw name="Toggle Button Should Be Selected">
+<arguments>
+<arg>locator</arg>
+</arguments>
+<doc>Verifies that ToggleButton is selected. 
+
+``locator`` is either a _query_ or _Object:Node_ for identifying the ToggleButton element, see `3. Locating JavaFX Nodes`.</doc>
+</kw>
+<kw name="Toggle Button Should Not Be Selected">
+<arguments>
+<arg>locator</arg>
+</arguments>
+<doc>Verifies that ToggleButton is not selected. 
+
+``locator`` is either a _query_ or _Object:Node_ for identifying the ToggleButton element, see  `3. Locating JavaFX Nodes`.</doc>
+</kw>
+<kw name="Wait For Events In Fx Application Thread">
+<arguments>
+<arg>timeout=5</arg>
+</arguments>
+<doc>Waits for current events in Fx Application Thread event queue to finish before continuing.
+
+``timeout`` is the maximum time in seconds that the events will be waited for. If the timeout is exceeded the keyword will fail. Default timeout is 5 seconds.</doc>
+</kw>
+<kw name="Wait Until Element Does Not Exists">
+<arguments>
+<arg>locator</arg>
+<arg>timeout=10</arg>
+<arg>timeUnit=SECONDS</arg>
+</arguments>
+<doc>Waits until given element is not found.
+
+``locator`` is either a _query_ or _Object:Node_ for identifying the element, see `3. Locating JavaFX Nodes`. 
+
+``timeout`` is the maximum waiting time value, defaults to 10 
+
+``timeUnit`` is the time unit to be used, defaults to SECONDS, see `5. Used ENUMs` for more options for _timeUnit_. 
+
+
+Example:
+| Wait Until Element Does Not Exists | id=some-node-id | 
+| Wait Until Element Does Not Exists | id=some-node-id | 200 | MILLISECONDS |</doc>
+</kw>
+<kw name="Wait Until Element Exists">
+<arguments>
+<arg>locator</arg>
+<arg>timeout=10</arg>
+<arg>timeUnit=SECONDS</arg>
+</arguments>
+<doc>Waits until given element can be found. Returns found node.
+
+``locator`` is either a _query_ or _Object:Node_ for identifying the element, see `3. Locating JavaFX Nodes`. 
+
+``timeout`` is the maximum waiting time value, defaults to 10 
+
+``timeUnit`` is the time unit to be used, defaults to SECONDS, see `5. Used ENUMs` for more options for _timeUnit_. 
+
+
+Example:
+| Wait Until Element Exists | id=some-node-id | 
+| Wait Until Element Exists | id=some-node-id | 200 | MILLISECONDS | 
+| ${node}= | Wait Until Element Exists | css=VBox | 
+| Click On | ${node} |</doc>
+</kw>
+<kw name="Wait Until Node Is Enabled">
+<arguments>
+<arg>locator</arg>
+<arg>timeout=5</arg>
+<arg>timeUnit=SECONDS</arg>
+</arguments>
+<doc>Waits until a node located using given locator becomes enabled. Returns found node.
+
+``locator`` is either a _query_ or _Object:Node_ for identifying the element, see `3. Locating JavaFX Nodes`. 
+
+``timeout`` is the maximum waiting time in seconds, defaults to 5. 
+``timeUnit`` is the time unit to be used, defaults to SECONDS, see `5. Used ENUMs` for more options for _timeUnit_. 
+
+
+Example:
+| Wait Until Node Is Enabled | id=some-node-id | 
+| Wait Until Node Is Enabled | id=some-node-id | 200 | MILLISECONDS | 
+| ${node}= | Wait Until Node Is Enabled | css=VBox | 
+| Click On | ${node} |</doc>
+</kw>
+<kw name="Wait Until Node Is Not Enabled">
+<arguments>
+<arg>locator</arg>
+<arg>timeout=5</arg>
+<arg>timeUnit=SECONDS</arg>
+</arguments>
+<doc>Waits until a node located using given locator becomes disabled. Returns found node.
+
+``locator`` is either a _query_ or _Object:Node_ for identifying the element, see `3. Locating JavaFX Nodes`. 
+
+``timeout`` is the maximum waiting time in seconds, defaults to 5. 
+``timeUnit`` is the time unit to be used, defaults to SECONDS, see `5. Used ENUMs` for more options for _timeUnit_. 
+
+
+Example:
+| Wait Until Node Is Not Enabled | id=some-node-id | 
+| Wait Until Node Is Not Enabled | id=some-node-id | 200 | MILLISECONDS |</doc>
+</kw>
+<kw name="Wait Until Node Is Not Visible">
+<arguments>
+<arg>locator</arg>
+<arg>timeout=5</arg>
+<arg>timeUnit=SECONDS</arg>
+</arguments>
+<doc>Waits until a node located by given locator becomes invisible. Returns found node.
+
+``locator`` is either a _query_ or _Object:Node_ for identifying the element, see `3. Locating JavaFX Nodes`. 
+
+``timeout`` is the maximum waiting time in seconds, defaults to 5. 
+``timeUnit`` is the time unit to be used, defaults to SECONDS, see `5. Used ENUMs` for more options for _timeUnit_. 
+
+
+Example:
+| Wait Until Node Is Not Visible | id=some-node-id | 
+| Wait Until Node Is Not Visible | id=some-node-id | 200 | MILLISECONDS |</doc>
+</kw>
+<kw name="Wait Until Node Is Visible">
+<arguments>
+<arg>locator</arg>
+<arg>timeout=5</arg>
+<arg>timeUnit=SECONDS</arg>
+</arguments>
+<doc>Waits until a node located by given locator becomes visible. Returns found node.
+
+``locator`` is either a _query_ or _Object:Node_ for identifying the element, see `3. Locating JavaFX Nodes`. 
+
+``timeout`` is the maximum waiting time in seconds, defaults to 5. 
+``timeUnit`` is the time unit to be used, defaults to SECONDS, see `5. Used ENUMs` for more options for _timeUnit_. 
+
+
+Example:
+| Wait Until Node Is Visible | id=some-node-id | 
+| Wait Until Node Is Visible | id=some-node-id | 200 | MILLISECONDS | 
+| ${node}= | Wait Until Node Is Visible | css=VBox | 
+| Click On | ${node} |</doc>
+</kw>
+<kw name="Wait Until Progress Bar Is Finished">
+<arguments>
+<arg>locator</arg>
+<arg>timeout=20</arg>
+</arguments>
+<doc>Waits until given ProgressBar is finished or timeout expires. 
+
+``locator`` is either a _query_ or _Object:Node_ for identifying the ToggleButton element, see  `3. Locating JavaFX Nodes`. 
+
+``timeout`` is an integer value for timeout in seconds, defaults to 20 seconds.</doc>
+</kw>
+<kw name="Window Should Be Focused">
+<arguments>
+<arg>window</arg>
+</arguments>
+<doc>Verifies that given window is focused. 
+
+``window`` is the _Object:Window_ that specifies which window should be focused, see `3.2 Using locators as keyword arguments`.</doc>
+</kw>
+<kw name="Window Should Be Visible">
+<arguments>
+<arg>window</arg>
+</arguments>
+<doc>Verifies that given window is visible.
+
+``window`` is the _Object:Window_ that specifies which window should be visible, see `3.2 Using locators as keyword arguments`.</doc>
+</kw>
+<kw name="Window Should Not Be Focused">
+<arguments>
+<arg>window</arg>
+</arguments>
+<doc>Verifies that given window is not focused. 
+
+``window`` is the _Object:Window_ that specifies which window should be focused, see `3.2 Using locators as keyword arguments`.</doc>
+</kw>
+<kw name="Window Should Not Be Visible">
+<arguments>
+<arg>window</arg>
+</arguments>
+<doc>Verifies that given window is not visible.
+
+``window`` is the _Object:Window_ that specifies which window should be not visible, see `3.2 Using locators as keyword arguments`.</doc>
+</kw>
+<kw name="Write">
+<arguments>
+<arg>text</arg>
+</arguments>
+<doc>Writes a given text characters one after the other.
+
+``text`` is the text characters to write
+
+Example: 
+| Write | Robot Framework |</doc>
+</kw>
+<kw name="Write Fast">
+<arguments>
+<arg>text</arg>
+</arguments>
+<doc>Writes a given text to system clipboard and pastes the content to active element.
+
+``text`` is the text characters to write
+
+Example: 
+| Write Fast | Robot Framework |</doc>
+</kw>
+<kw name="Write To">
+<arguments>
+<arg>locator</arg>
+<arg>text</arg>
+</arguments>
+<doc>Writes a given text characters one after the other to given locator.
+
+``locator`` is either a _query_ or _Object:Bounds, Node, Point2D, PointQuery, Scene, Window_ for identifying the element, see `3. Locating JavaFX Nodes`. 
+
+``text`` is the text characters to write
+
+Example: 
+| Write To | css=.css-name | Robot Framework |</doc>
+</kw>
+</keywordspec>

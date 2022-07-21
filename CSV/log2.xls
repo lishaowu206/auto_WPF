@@ -1,0 +1,128 @@
+different**************************
+2022-04-18 18:21:01
+Maximize
+Gateway.ConfigManage.CustomControl.LogTemp
+1.3.0.4650
+▲
+2022-04-18 18:21:59
+202.114.4.33
+Item: Gateway.Entity.Composition.ConfigData, Column Display Index: 2
+00:04:16
+Close
+Show Calendar
+VisitNumber
+00:04:35
+2020-04-29
+Minimize
+Gateway.Entity.Composition.ConfigData
+Item: Gateway.Entity.Composition.ConfigData, Column Display Index: 6
+00:02:40
+Log
+4A36-F3C9-43A9-75BB0407E1CA
+33
+M
+BB_125
+Device : Device 33 is offline  IP:202.114.4.33.
+ACK : ACK of ADT^A03 message is outbound to 127.0.0.1:64143182133813,the result is AA.
+▼
+2022-04-18 18:21:03
+Gateway.ConfigManage.CustomControl.ConfigInfo
+76
+2022-04-18 18:20:52
+System
+2022-04-18 18:20:46
+Patient
+2022-04-18 18:18:20
+Item: Gateway.Entity.Composition.ConfigData, Column Display Index: 7
+<Enter text here>
+ACC001
+00:03:18
+Item: Gateway.Entity.Data.DataBase.MonitorEntity, Column Display Index: 9
+Vista 120
+242
+V1.21
+2022-04-18 18:22:27
+Config : The patient demographics is queried.
+PatientId
+00:01:12
+AccountNumber
+12345678
+Item: Gateway.Entity.Composition.ConfigData, Column Display Index: 4
+00:02:00
+00:00:21
+Item: Gateway.Entity.Composition.ConfigData, Column Display Index: 1
+2015-08-11
+2022-04-18 18:20:48
+Item: Gateway.Entity.Composition.ConfigData, Column Display Index: 0
+1.0.0.14446
+00:02:59
+Item: Gateway.Entity.Data.DataBase.MonitorEntity, Column Display Index: 0
+00:00:16
+***
+00:01:30
+/
+DB
+Item: Gateway.Entity.Data.DataBase.hl7patient, Column Display Index: 6
+2022-04-18 18:19:00
+채널
+EEE
+2022-04-18 18:21:34
+2022-04-18 18:20:43
+Device : Device 33 is online  IP:202.114.4.33.
+Item: Gateway.Entity.Composition.ConfigData, Column Display Index: 5
+소스 파일 경로가 올바르지 않습니다.
+Vsita 120 Gateway V1.21-R4650
+Gateway.Entity.Data.DataBase.MonitorEntity
+DataBase File
+Host : The patient demographic notification to EMR switch is closed.
+111111
+00:04:00
+Item: Gateway.Entity.Data.DataBase.hl7patient, Column Display Index: 5
+DBFirst
+Vista 120 Gateway
+2022-04-18 18:22:18
+238
+Item: Gateway.ConfigManage.CustomControl.ConfigInfo, Column Display Index: 1
+CMP
+00:02:21
+Neonate
+ICU2-6
+Pediatric
+Host : The Overlimit alarm switch is closed.
+00:06:13
+00:03:45
+Item: Gateway.Entity.Composition.ConfigData, Column Display Index: 3
+2022-04-18 18:22:05
+System Menu Bar
+00:00:04
+Adult
+2022-04-18 18:22:03
+00:00:00
+EMR
+2022-04-18 18:22:21
+EMR : ADT^A03 message is inbound from 127.0.0.1:64143182133813.Message ID:MSG-20170613-075410-0537.
+--
+00:02:24
+Device
+00:00:40
+Gateway.ConfigManage.CustomControl.ListItem
+Integrated Database
+127.0.0.1
+Gateway.Entity.Data.DataBase.hl7patient
+2022-04-18 18:21:20
+Item: Gateway.Entity.Data.DataBase.MonitorEntity, Column Display Index: 5
+Host : The Arrhythmia alarm switch is closed.
+채널 1--연결 실패.
+00:00:51
+00:02:05
+PostgreSQL
+1
+Mx1.5
+4
+Host : The Life-threatening alarm switch is closed.
+Config : The user logs in the config tool.
+Config : Restart Gateway.
+2022-04-18 18:20:22
+2022-04-18 18:22:08
+0
+Item: Gateway.ConfigManage.CustomControl.ConfigInfo, Column Display Index: 2
